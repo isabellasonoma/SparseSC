@@ -8,6 +8,8 @@
 #   Ideally we'd have something like marginal R2, but the initial method is probably fine for most uses. (We could standardize input features).)
 import numpy as np
 from sklearn.linear_model import MultiTaskLassoCV, MultiTaskLasso, LassoCV
+from sklearn.preprocessing import StandardScaler
+
 from .misc import capture_all
 
 
@@ -150,13 +152,18 @@ def _MTLassoCV_MatchSpace(
         Y = Y[sample, :]
     if Y_col_block_size is not None:
         Y = _block_summ_cols(Y, Y_col_block_size)
-    varselectorfit = MultiTaskLassoCV(normalize=normalize, cv=n_v_cv, alphas=v_pens, **fit_args).fit(
-        X, Y
+    if normalize:
+        scaler = StandardScaler()
+        X_norm = scaler.fit_transform(X)
+    else:
+        X_norm = X
+    varselectorfit = MultiTaskLassoCV(cv=n_v_cv, alphas=v_pens, **fit_args).fit(
+        X_norm, Y
     )
     best_v_pen = varselectorfit.alpha_
     if se_factor is not None:
         best_v_pen = _neg_se_rule(varselectorfit, factor=se_factor)
-        varselectorfit = MultiTaskLasso(alpha=best_v_pen, normalize=normalize).fit(X, Y)
+        varselectorfit = MultiTaskLasso(alpha=best_v_pen).fit(X_norm, Y)
     V = np.sqrt(
         np.sum(np.square(varselectorfit.coef_), axis=0)
     )  # n_tasks x n_features -> n_feature

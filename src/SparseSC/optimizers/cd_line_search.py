@@ -3,7 +3,10 @@
 import numpy as np
 from collections import namedtuple
 from scipy.optimize import line_search
-from scipy.optimize.linesearch import LineSearchWarning
+try:
+    from scipy.optimize.linesearch import LineSearchWarning
+except ImportError:
+    from scipy.optimize._linesearch import LineSearchWarning
 from .simplex_step import simplex_step, simplex_step_proj_sort
 
 import warnings
